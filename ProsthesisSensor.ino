@@ -25,7 +25,7 @@ const int LOADCELL_DOUT_PIN = 3;
 const int LOADCELL_SCK_PIN = 2;
 const int MAP_PIN = A2;
 const int CHIPSELECT_PIN = 9; // CS pin on sd card module
-int prev_file_indx = 0;   // used for file naming
+int prev_file_indx = 0;       // used for file naming
 int mode = 1;
 int prev_mode = 0;
 int prev_pot_val = 0;
@@ -38,6 +38,13 @@ float frequency = 0.0;
 unsigned long mode_button_millis = 0;
 bool print_HX711 = 0;
 bool pressure_indicator_on = 0;
+bool rgb_color[] = {0, 0, 0};
+void rgb_color_change(bool r, bool g, bool b)
+{
+  rgb_color[0] = r;
+  rgb_color[1] = g;
+  rgb_color[2] = b;
+}
 
 Adafruit_NeoPixel pixels(NUMPIXELS, LED_ring, NEO_GRB + NEO_KHZ800);
 
@@ -50,7 +57,7 @@ void setup()
 
   scale.begin(LOADCELL_DOUT_PIN, LOADCELL_SCK_PIN);
   //scale.set_scale(-38000); //TODO: fix scale factor
-  //scale.tare(); //TODO: how and when to tare?
+  scale.tare(); //TODO: how and when to tare?
 
   pinMode(MAP_PIN, INPUT);
   pinMode(Buttonpin, INPUT);
@@ -132,7 +139,11 @@ void loop()
     Serial.print(MAPread(MAP_PIN));
     Serial.print("kPa ");
     if (print_HX711)
+    {
       Serial.println(scale.read());
+      //Serial.println(scale.get_units());
+
+    }
     else
       Serial.println("<go to yellow light then hold mode button for min. 2s to show HX711 data>");
 
@@ -183,20 +194,18 @@ void loop()
     mode = mode % 8 + 1; //Mode iterates between 1-7
   }
 
-  //Do changes only once (potentiometer fluctuate quite a bit...)
-  if (prev_mode != mode || abs(prev_pot_val - pot_val) > 7)
+  if (prev_mode != mode)
   {
     prev_mode = mode;
-    prev_pot_val = pot_val;
     switch (mode)
     {
     case -1: //RED - error mode
       Serial.println("SD ERROR");
-      setLightColor(pot_val, 0, 0);
+      rgb_color_change(1,0,0);
       break;
 
     case 1:
-      setLightColor(pot_val, pot_val, 0);
+      rgb_color_change(1,1,0);
       break;
 
     case 2:
@@ -207,7 +216,7 @@ void loop()
         prev_mode = 1;
       }
       else
-        setLightColor(0, 0, pot_val);
+      rgb_color_change(0,0,1);
       break;
 
     case 3:
@@ -219,27 +228,27 @@ void loop()
       }
       else
       {
-        setLightColor(pot_val, 0, pot_val);
+      rgb_color_change(1,0,1);
         if (print_HX711)
           scale.tare();
       }
       break;
 
     case 4:
-      setLightColor(pot_val, pot_val, pot_val);
+      rgb_color_change(1,1,1);
       break;
 
     case 5:
-      setLightColor(0, pot_val, pot_val);
+      rgb_color_change(0,1,1);
       break;
 
     case 6:
-      setLightColor(0, pot_val, 0);
+      rgb_color_change(0,1,0);
       break;
 
     case 7:
       pressure_indicator_on = 1;
-      setLightColor(0, 0, 0);
+      rgb_color_change(0,0,0);
       break;
 
     case 8:
@@ -275,6 +284,13 @@ void loop()
     default:
       break;
     }
+    setLightColor(rgb_color[0]*pot_val, rgb_color[1]*pot_val, rgb_color[2]*pot_val);
+  }
+  //Do changes only once (potentiometer fluctuate quite a bit...)
+  if (abs(prev_pot_val - pot_val) > 7)
+  {
+    prev_pot_val = pot_val;
+    setLightColor(rgb_color[0]*pot_val, rgb_color[1]*pot_val, rgb_color[2]*pot_val);
   }
 }
 
