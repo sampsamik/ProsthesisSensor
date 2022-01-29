@@ -3,7 +3,7 @@
 #include <SPI.h>
 #include <SD.h>
 
-#define Led_ring 7
+#define LED_ring 7
 #define Buttonpin 6
 #define Buttonpin2 5
 #define pot A0
@@ -20,13 +20,11 @@ float mapfloat(float x, float in_min, float in_max, float out_min, float out_max
 }
 
 File dataFile; // initialize sd file
-//String fileNumber = "000";
-//String fileName;
 
 const int LOADCELL_DOUT_PIN = 3;
 const int LOADCELL_SCK_PIN = 2;
-const int MAPPin = A2;
-const int chipSelect = 9; // CS pin on sd card module
+const int MAP_PIN = A2;
+const int CHIPSELECT_PIN = 9; // CS pin on sd card module
 int prev_file_indx = 0;   // used for file naming
 int mode = 1;
 int prev_mode = 0;
@@ -41,11 +39,9 @@ unsigned long mode_button_millis = 0;
 bool print_HX711 = 0;
 bool pressure_indicator_on = 0;
 
-Adafruit_NeoPixel pixels(NUMPIXELS, Led_ring, NEO_GRB + NEO_KHZ800);
+Adafruit_NeoPixel pixels(NUMPIXELS, LED_ring, NEO_GRB + NEO_KHZ800);
 
 HX711 scale;
-
-#define DELAYVAL 10
 
 void setup()
 {
@@ -56,18 +52,18 @@ void setup()
   //scale.set_scale(-38000); //TODO: fix scale factor
   //scale.tare(); //TODO: how and when to tare?
 
-  pinMode(MAPPin, INPUT);
+  pinMode(MAP_PIN, INPUT);
   pinMode(Buttonpin, INPUT);
   pinMode(Buttonpin2, INPUT);
   pinMode(pot, INPUT);
-  pinMode(Led_ring, OUTPUT);
+  pinMode(LED_ring, OUTPUT);
   pixels.begin();
   delay(800);
   setLightColor(0, 0, 0);
   delay(500);
 
   // verify SD card is working
-  if (!SD.begin(chipSelect))
+  if (!SD.begin(CHIPSELECT_PIN))
   {
     Serial.println("SD begin fail");
     setLightColor(60, 0, 0);
@@ -133,7 +129,7 @@ void loop()
     Serial.print(" ");
     Serial.print(mode);
     Serial.print(" ");
-    Serial.print(MAPread(MAPPin));
+    Serial.print(MAPread(MAP_PIN));
     Serial.print("kPa ");
     if (print_HX711)
       Serial.println(scale.read());
@@ -152,7 +148,7 @@ void loop()
   if (pressure_indicator_on)
   {
     float kpa_limits[] = {20.0, 58.0, 60.0, 62.0, 105.0};
-    float kPa = MAPread(MAPPin);
+    float kPa = MAPread(MAP_PIN);
     if (kPa <= kpa_limits[1])
     {
       int light_intensity = mapfloat(kPa, kpa_limits[1], kpa_limits[0], 15.0, 120.0);
@@ -253,7 +249,7 @@ void loop()
       mode = 1;
       int it_sd = 0;
       int it_sd_lim = 5;
-      while (!SD.begin(chipSelect))
+      while (!SD.begin(CHIPSELECT_PIN))
       {
         SD.end();
         setLightColor_wDelay(pot_val * ((float)(it_sd + 1) / (float)(it_sd_lim + 1)), 0, 0, 400 / NUMPIXELS);
@@ -357,7 +353,7 @@ void setLightColor_wDelay(int r, int g, int b, int delay_light, int num_pixels)
 int recordData(int pot_val_, int flush_it)
 {
 
-  if (!SD.begin(chipSelect))
+  if (!SD.begin(CHIPSELECT_PIN))
   {
     Serial.println("SD could not initiate");
     setLightColor(pot_val_, 0, 0);
@@ -396,7 +392,7 @@ int recordData(int pot_val_, int flush_it)
   while (digitalRead(Buttonpin2))
   {
     //Record data
-    String data_array = String(millis() - start_millis) + "," + String(MAPread(MAPPin)) + "," + String(scale.read());
+    String data_array = String(millis() - start_millis) + "," + String(MAPread(MAP_PIN)) + "," + String(scale.read());
 
     if (dataFile_)
     {
