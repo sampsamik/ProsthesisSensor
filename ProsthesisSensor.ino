@@ -1,8 +1,3 @@
-/*
-    Look for "TODO" for things to do/fix
-    Mvh. Sampsa
-*/
-
 #include <Adafruit_NeoPixel.h>
 #include <HX711.h>
 #include <SPI.h>
